@@ -1718,6 +1718,9 @@ function studioToggle(k,el){var on=el.classList.toggle('on');if(!state.studio)st
 function tog(a){var k=a[0],lab=a[1],on=studioOn(k);return `<button class="stgl ${on?'on':''}" onclick="studioToggle('${k}',this)"><span class="stgl-ic">${lic(STU_ICON[k]||'_')}</span><span class="stgl-l">${lab}</span></button>`;}
 function acc(icon,title,arr,open){return `<details class="acc"${open?' open':''}><summary><span class="acc-ic">${lic(icon)}</span>${title}</summary><div class="accbody"><div class="stgrid">${arr.map(tog).join('')}</div></div></details>`;}
 var studioImgUrl=null,studioImgSeed=null,studioImgPromptUsed='';
+var IMG_QUALITY='Ultra photorealistic interior photography, indistinguishable from a real professional photo, 4K ultra high definition, razor sharp details, premium architectural digest style, realistic interior design, accurate room scale, correct furniture proportions, real material behavior, natural light falloff, soft realistic shadows, true glass reflections, realistic polished stone, natural wood grain, detailed fabric texture, subtle wall imperfections, realistic ceiling and lighting details, believable construction joints, clean architectural lines, balanced composition, two-point perspective, vertical lines perfectly straight, full-frame DSLR camera look, 24mm lens, f/8 aperture, ISO 100, natural color grading, realistic contrast, realistic highlights, natural ambient light, cinematic yet believable, elegant atmosphere, luxury interior photography, editorial quality, no artificial CGI look, no plastic texture, no over-smoothing, no fake render feeling';
+var IMG_NEG='No CGI, no 3D render look, no cartoon, no illustration, no anime, no plastic materials, no fake lighting, no overexposed highlights, no blurry image, no low resolution, no distorted furniture, no warped architecture, no wrong perspective, no fisheye distortion, no messy proportions, no floating objects, no unrealistic reflections, no oversaturated colors, no artificial glow, no extra doors, no extra windows, no deformed people, no duplicate objects, no text, no watermark, no logo';
+function studioFinalPrompt(p){p=String(p||'').trim().slice(0,700);return (p?p+', ':'')+IMG_QUALITY+'. '+IMG_NEG;}
 function studioImagePrompt(){var st=state.studio||{},on=function(k){return (st[k]||0)>0;};
   var sM={Modern:'modern',MinimalS:'minimalist',LuxuryS:'luxury',Japandi:'japandi',WabiSabi:'wabi-sabi',Brutalist:'brutalist',Organic:'organic',Futuristic:'futuristic',Classic:'classic',ThaiContemp:'thai contemporary',KoreanSoft:'soft korean',Industrial:'industrial',HotelMood:'hotel mood',Retail:'retail interior'};
   var mM={Wood:'wood',Stone:'stone',Metal:'black metal',Glass:'glass',Fabric:'fabric',Concrete:'polished concrete',Marble:'marble',Laminate:'laminate',Mirror:'mirror'};
@@ -1736,15 +1739,16 @@ function studioImagePrompt(){var st=state.studio||{},on=function(k){return (st[k
   return p;}
 async function studioGenImage(prompt,hires){
   if(!hires)studioImgPromptUsed=prompt;
+  var fp=studioFinalPrompt(prompt);
   try{
-    var res=await fetch('/api/image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt,ratio:studioRatio()})});
+    var res=await fetch('/api/image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:fp,ratio:studioRatio()})});
     var data=await res.json();
     if(res.ok&&data.image)return 'data:'+(data.mime||'image/png')+';base64,'+data.image;
     throw new Error(data.error||('HTTP '+res.status));
   }catch(e){
     var seed=Math.floor(Math.random()*1e6);if(!hires)studioImgSeed=seed;
     var wh=studioRatioWH(false);
-    var url='https://image.pollinations.ai/prompt/'+encodeURIComponent(String(prompt).slice(0,1200))+'?width='+wh[0]+'&height='+wh[1]+'&nologo=true&seed='+seed+'&model=flux';
+    var url='https://image.pollinations.ai/prompt/'+encodeURIComponent(fp.slice(0,2500))+'?width='+wh[0]+'&height='+wh[1]+'&nologo=true&seed='+seed+'&model=flux';
     await new Promise(function(rs,rj){var im=new Image();im.onload=function(){rs();};im.onerror=function(){rj(new Error('โหลดรูปไม่ได้'));};im.src=url;setTimeout(function(){rj(new Error('หมดเวลา'));},60000);});
     return url;
   }}

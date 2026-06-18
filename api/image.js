@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     let prompt = body.prompt;
     if (!prompt || !String(prompt).trim()) return res.status(400).json({ error: 'no prompt' });
-    prompt = String(prompt).slice(0, 2000);
+    prompt = String(prompt).slice(0, 4000);
     const ar = (body.ratio || '4:3');
     prompt = prompt + '. Aspect ratio ' + ar + ', composition framed for ' + ar + '.';
 
